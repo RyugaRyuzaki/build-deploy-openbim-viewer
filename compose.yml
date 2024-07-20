@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+  server_tiles:
+    image: ryugaryuzaki/server-tiles:latest
+    tty: true
+    restart: unless-stopped   
+    volumes :
+      - ./env/server-tiles/.env:/app/.env
+    env_file:
+    - ./env/server-tiles/.env
+    ports:
+      - ${PORT}:3000  
+      
+  bim-tiles:
+    image: ryugaryuzaki/bim-tiles:latest
+    tty: true
+    volumes :
+      - ./env/bim-tiles/.env:/app/.env  
+    expose:
+      - "80"
+    depends_on:
+      - server_tiles 
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://bim-tiles:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  load-balancer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      bim-tiles:
+        condition: service_healthy
